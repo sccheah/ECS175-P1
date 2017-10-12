@@ -2,8 +2,6 @@
  * Simple glut demo that can be used as a template for
  * other projects by Garrett Aldrich
  */
-
-
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -21,7 +19,11 @@
 //other includes
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <string>
 
+using namespace std;
 
 /****set in main()****/
 //the number of pixels in the grid
@@ -50,8 +52,71 @@ void check();
 
 
 
+class Point {
+	int x;
+	int y;
+
+public:
+	void set_x(int new_x) {x = new_x;}
+	void set_y(int new_y) {y = new_y;}
+	int get_x() {return x;}
+	int get_y() {return y;}
+};
+
+class Polygon {
+	int numberOfPoints;
+	Point *points;
+};
+
+
+void read_file(Polygon *polygons)
+{
+	int numberOfPolygons;
+	string line;
+
+	fstream file;
+	file.open("data.txt");
+
+	file >> numberOfPolygons;
+
+	polygons = new Polygon [numberOfPolygons];
+
+	for (int i = 0; i < numberOfPolygons; i++)
+	{
+		getline (file, line);
+		file >> polygons[i].numberOfPoints;
+		polygons[i].points = new Point [polygons[i].numberOfPoints];
+
+		for (int j = 0; j < polygons[i].numberOfPoints; j++)
+		{
+			int x, y;
+
+			file >> x;
+			polygons[i].points[j].set_x(x);
+			polygons[i].points[j].set_y(y);
+		}
+
+	}
+
+	file.close()
+}
+
+
 int main(int argc, char **argv)
 {
+/*
+	Point point;
+	point.set_xy(1, 2);
+	cout << point.get_x() << endl;
+*/
+
+	Polygon *polygons;
+
+	read_file(polygons);
+
+
+
+
     
     //the number of pixels in the grid
     grid_width = 100;

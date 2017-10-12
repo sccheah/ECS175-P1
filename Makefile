@@ -13,15 +13,15 @@ CCFLAGS :=
 INCDIR := -I/usr/include
 LDLIBS := $(GLLIB)
 
-TARGET = glutdemo
-OBJS = demo.o
+TARGET = polygons
+OBJS = polygons.o
 
 
 all: $(TARGET)
 
 
 $(TARGET): $(OBJS)
-	$(CC)  $^ $(CCFLAGS) $(LDLIBS)  -o $@
+	$(CC) $^ $(CCFLAGS) $(LDLIBS) -o $@
 
 %.o : %.cpp
 	$(CC) $(CCFLAGS) -o $@ -c $(INCDIR) $<
