@@ -2,6 +2,9 @@
  * Simple glut demo that can be used as a template for
  * other projects by Garrett Aldrich
  */
+
+// DOES NOT READ FILE IN MAC FOR SOME REASON FIX LATER... WORKING IN LINUX ENV
+
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -72,6 +75,7 @@ public:
 
 Polygon *polygons = NULL;
 int numberOfPolygons = 0;
+int user_input = 0;
 
 
 Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
@@ -103,6 +107,20 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 	return polygons;
 }
 
+int print_menu()
+{
+	cout << "1. DDA Algorithm" << endl;
+}
+
+void menu()
+{
+	// on exit, make sure to output verticies to new data file
+
+	int input;
+
+	input = print_menu();
+
+}
 
 int main(int argc, char **argv)
 {  
@@ -116,21 +134,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	cout << numberOfPolygons << endl;
-	cout << polygons[0].numberOfPoints << endl;
-	for (int i = 0; i < numberOfPolygons; i++)
-	{
-		for (int j = 0; j < polygons[i].numberOfPoints; j++)
-		{
-			//cout << "here" << endl;
-			//cout << "x: ";
-			cout << polygons[i].points[j].get_x() << endl;
-			//cout << "y: ";
-			cout << polygons[i].points[j].get_y() << endl;
-
-		}
-	}
-	
+	menu();
 	
 	
 	//the number of pixels in the grid
@@ -189,6 +193,45 @@ void idle()
 	glutPostRedisplay();
 }
 
+
+/*
+class Point {
+	double x;
+	double y;
+	
+public:
+	void set_x(double new_x) {x = new_x;}
+	void set_y(double new_y) {y = new_y;}
+	int get_x() {return x;}
+	int get_y() {return y;}
+};
+
+class Polygon {
+public:
+	int numberOfPoints;
+	Point *points;
+};
+
+Polygon *polygons = NULL;
+int numberOfPolygons = 0;
+int user_input = 0;
+
+*/
+
+//plot verticies
+void plot_verticies()
+{
+	int num_of_polygons = 0;
+
+	while (num_of_polygons < numberOfPolygons)
+	{
+		for (int k = 0; k < polygons[num_of_polygons].numberOfPoints; k++)
+		{
+			draw_pix(polygons[num_of_polygons].points[k].get_x(), polygons[num_of_polygons].points[k].get_y());
+		}
+	}
+}
+
 //this is where we render the screen
 void display()
 {
@@ -197,13 +240,11 @@ void display()
 	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
 	
-	//draws every other pixel on the screen
-	/*for (int j = 0; j < grid_height; j+=2){
-		for (int i = 0; i < grid_width; i+=2){
-			//this is the only "rendering call you should make in project 1"
-			draw_pix(i,j);
-		}
-	}*/
+	switch(user_input){
+		case 0:
+			plot_verticies();
+			break;
+	}
 	
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
