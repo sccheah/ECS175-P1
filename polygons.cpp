@@ -2,20 +2,21 @@
  * Simple glut demo that can be used as a template for
  * other projects by Garrett Aldrich
  */
-#ifdef WIN32
+/*#ifdef WIN32
 #include <windows.h>
-#endif
+#endif*/
 
-#if defined (__APPLE__) || defined(MACOSX)
+//#if defined (__APPLE__) || defined(MACOSX)
 #include <OpenGL/gl.h>
-//#include <OpenGL/glu.h>
+#include <OpenGL/glu.h>
 #include <GLUT/glut.h>
 
+/*
 #else //linux
 #include <GL/gl.h>
 #include <GL/glut.h>
 #endif
-
+*/
 //other includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,70 +54,111 @@ void check();
 
 
 class Point {
-	int x;
-	int y;
-
+    int x;
+    int y;
+    
 public:
-	void set_x(int new_x) {x = new_x;}
-	void set_y(int new_y) {y = new_y;}
-	int get_x() {return x;}
-	int get_y() {return y;}
+    void set_x(int new_x) {x = new_x;}
+    void set_y(int new_y) {y = new_y;}
+    int get_x() {return x;}
+    int get_y() {return y;}
 };
 
 class Polygon {
-	int numberOfPoints;
-	Point *points;
+public:
+    int numberOfPoints;
+    Point *points;
 };
 
 
 void read_file(Polygon *polygons)
 {
-	int numberOfPolygons;
-	string line;
-
-	fstream file;
-	file.open("data.txt");
-
-	file >> numberOfPolygons;
-
-	polygons = new Polygon [numberOfPolygons];
-
-	for (int i = 0; i < numberOfPolygons; i++)
-	{
-		getline (file, line);
-		file >> polygons[i].numberOfPoints;
-		polygons[i].points = new Point [polygons[i].numberOfPoints];
-
-		for (int j = 0; j < polygons[i].numberOfPoints; j++)
-		{
-			int x, y;
-
-			file >> x;
-			polygons[i].points[j].set_x(x);
-			polygons[i].points[j].set_y(y);
-		}
-
-	}
-
-	file.close()
+    /*
+     #include <iostream>
+     #include <fstream>
+     #include <sstream>
+     
+     using namespace std;
+     
+     int main(){
+     int numberOfPolygons;
+     ifstream file("data.txt");
+     
+     file >> numberOfPolygons;
+     cout << "numberOfPolygons: " << numberOfPolygons << endl;
+     
+     for (int i = 0; i < numberOfPolygons; i++)
+     {
+     int numberOfPoints;
+     file >> numberOfPoints;
+     cout << "numberOfPoints: " << numberOfPoints << endl;
+     for (int j = 0; j < numberOfPoints; j++)
+     {
+     double x, y;
+     file >> x;
+     file >> y;
+     
+     cout << "x: " << x << endl;
+     cout << "y: " << y << endl;
+     }
+     
+     }
+     
+     return 0;
+     
+     }
+*/
+    
+    
+    //cout << "here" << endl;
+    int numberOfPolygons;
+    string line;
+    
+    fstream file;
+    file.open("data.txt");
+    
+    file >> numberOfPolygons;
+    
+    polygons = new Polygon [numberOfPolygons];
+    
+    for (int i = 0; i < numberOfPolygons; i++)
+    {
+        getline (file, line);
+        file >> polygons[i].numberOfPoints;
+        polygons[i].points = new Point [polygons[i].numberOfPoints];
+        
+        for (int j = 0; j < polygons[i].numberOfPoints; j++)
+        {
+            int x = 0, y = 0;
+            
+            file >> x;
+            file >> y;
+            polygons[i].points[j].set_x(x);
+            polygons[i].points[j].set_y(y);
+            
+        }
+        
+    }
+    
+    file.close();
 }
 
 
 int main(int argc, char **argv)
 {
-/*
-	Point point;
-	point.set_xy(1, 2);
-	cout << point.get_x() << endl;
-*/
-
-	Polygon *polygons;
-
-	read_file(polygons);
-
-
-
-
+    
+     /*Point point;
+     point.set_xy(1, 2);
+     cout << point.get_x() << endl;
+      */
+      
+    Polygon *polygons = nullptr;
+    
+    read_file(polygons);
+    
+    //cout << polygons[0].points[0].get_x() << endl;
+    
+    
     
     //the number of pixels in the grid
     grid_width = 100;
@@ -131,56 +173,56 @@ int main(int argc, char **argv)
     win_height = grid_height*pixel_size;
     win_width = grid_width*pixel_size;
     
-	/*Set up glut functions*/
+    /*Set up glut functions*/
     /** See https://www.opengl.org/resources/libraries/glut/spec3/spec3.html ***/
     
-	glutInit(&argc,argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInit(&argc,argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     /*initialize variables, allocate memory, create buffers, etc. */
     //create window of size (win_width x win_height
     glutInitWindowSize(win_width,win_height);
     //windown title is "glut demo"
-	glutCreateWindow("glut demo");
+    glutCreateWindow("glut demo");
     
-	/*defined glut callback functions*/
-	glutDisplayFunc(display); //rendering calls here
-	glutReshapeFunc(reshape); //update GL on window size change
-	glutMouseFunc(mouse);     //mouse button events
-	glutMotionFunc(motion);   //mouse movement events
-	glutKeyboardFunc(key);    //Keyboard events
-	glutIdleFunc(idle);       //Function called while program is sitting "idle"
+    /*defined glut callback functions*/
+    glutDisplayFunc(display); //rendering calls here
+    glutReshapeFunc(reshape); //update GL on window size change
+    glutMouseFunc(mouse);     //mouse button events
+    glutMotionFunc(motion);   //mouse movement events
+    glutKeyboardFunc(key);    //Keyboard events
+    glutIdleFunc(idle);       //Function called while program is sitting "idle"
     
     //initialize opengl variables
     init();
     //start glut event loop
-	glutMainLoop();
-	return 0;
+    glutMainLoop();
+    return 0;
 }
 
 /*initialize gl stufff*/
 void init()
 {
     //set clear color (Default background to white)
-	glClearColor(1.0,1.0,1.0,1.0);
+    glClearColor(1.0,1.0,1.0,1.0);
     //checks for OpenGL errors
-	check();
+    check();
 }
 
 //called repeatedly when glut isn't doing anything else
 void idle()
 {
     //redraw the scene over and over again
-	glutPostRedisplay();	
+    glutPostRedisplay();
 }
 
 //this is where we render the screen
 void display()
 {
     //clears the screen
-	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
     //clears the opengl Modelview transformation matrix
-	glLoadIdentity();
-	
+    glLoadIdentity();
+    
     //draws every other pixel on the screen
     for (int j = 0; j < grid_height; j+=2){
         for (int i = 0; i < grid_width; i+=2){
@@ -192,7 +234,7 @@ void display()
     //blits the current opengl framebuffer on the screen
     glutSwapBuffers();
     //checks for opengl errors
-	check();
+    check();
 }
 
 
@@ -208,18 +250,18 @@ void draw_pix(int x, int y){
 /*Gets called when display size changes, including initial craetion of the display*/
 void reshape(int width, int height)
 {
-	/*set up projection matrix to define the view port*/
+    /*set up projection matrix to define the view port*/
     //update the ne window width and height
-	win_width = width;
-	win_height = height;
+    win_width = width;
+    win_height = height;
     
     //creates a rendering area across the window
-	glViewport(0,0,width,height);
+    glViewport(0,0,width,height);
     // up an orthogonal projection matrix so that
     // the pixel space is mapped to the grid space
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-	glOrtho(0,grid_width,0,grid_height,-10,10);
+    glOrtho(0,grid_width,0,grid_height,-10,10);
     
     //clear the modelview matrix
     glMatrixMode(GL_MODELVIEW);
@@ -232,21 +274,21 @@ void reshape(int width, int height)
     //set pixel size relative to the grid cell size
     glPointSize(pixel_size);
     //check for opengl errors
-	check();
+    check();
 }
 
 //gets called when a key is pressed on the keyboard
 void key(unsigned char ch, int x, int y)
 {
-	switch(ch)
-	{
-		default:
+    switch(ch)
+    {
+        default:
             //prints out which key the user hit
             printf("User hit the \"%c\" key\n",ch);
-			break;
-	}
+            break;
+    }
     //redraw the scene after keyboard input
-	glutPostRedisplay();
+    glutPostRedisplay();
 }
 
 
@@ -255,17 +297,17 @@ void mouse(int button, int state, int x, int y)
 {
     //print the pixel location, and the grid location
     printf ("MOUSE AT PIXEL: %d %d, GRID: %d %d\n",x,y,(int)(x/pixel_size),(int)((win_height-y)/pixel_size));
-	switch(button)
-	{
-		case GLUT_LEFT_BUTTON: //left button
+    switch(button)
+    {
+        case GLUT_LEFT_BUTTON: //left button
             printf("LEFT ");
             break;
-		case GLUT_RIGHT_BUTTON: //right button
+        case GLUT_RIGHT_BUTTON: //right button
             printf("RIGHT ");
-		default:
+        default:
             printf("UNKNOWN "); //any other mouse button
-			break;
-	}
+            break;
+    }
     if(state !=GLUT_DOWN)  //button released
         printf("BUTTON UP\n");
     else
@@ -279,17 +321,18 @@ void mouse(int button, int state, int x, int y)
 void motion(int x, int y)
 {
     //redraw the scene after mouse movement
-	glutPostRedisplay();
+    glutPostRedisplay();
 }
 
 //checks for any opengl errors in the previous calls and
 //outputs if they are present
 void check()
 {
-	GLenum err = glGetError();
-	if(err != GL_NO_ERROR)
-	{
-		printf("GLERROR: There was an error %s\n",gluErrorString(err) );
-		exit(1);
-	}
+    GLenum err = glGetError();
+    if(err != GL_NO_ERROR)
+    {
+        printf("GLERROR: There was an error %s\n",gluErrorString(err) );
+        exit(1);
+    }
 }
+
