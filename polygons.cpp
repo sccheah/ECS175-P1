@@ -110,6 +110,8 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 int print_menu()
 {
 	cout << "1. DDA Algorithm" << endl;
+    
+    return 0;
 }
 
 void menu()
@@ -227,8 +229,10 @@ void plot_verticies()
 	{
 		for (int k = 0; k < polygons[num_of_polygons].numberOfPoints; k++)
 		{
-			draw_pix(polygons[num_of_polygons].points[k].get_x(), polygons[num_of_polygons].points[k].get_y());
+			draw_pix((int)(polygons[num_of_polygons].points[k].get_x()), (int)(polygons[num_of_polygons].points[k].get_y()));
 		}
+        
+        num_of_polygons++;
 	}
 }
 
@@ -240,11 +244,14 @@ void display()
 	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
 	
+    
 	switch(user_input){
 		case 0:
 			plot_verticies();
 			break;
 	}
+    
+    //draw_pix(20, 10);
 	
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
