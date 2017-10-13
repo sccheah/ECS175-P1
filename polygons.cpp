@@ -2,20 +2,20 @@
  * Simple glut demo that can be used as a template for
  * other projects by Garrett Aldrich
  */
-/*#ifdef WIN32
+#ifdef WIN32
 #include <windows.h>
-#endif*/
+#endif
 
-//#if defined (__APPLE__) || defined(MACOSX)
-//#include <OpenGL/gl.h>
-//#include <OpenGL/glu.h>
-//#include <GLUT/glut.h>
+#if defined (__APPLE__) || defined(MACOSX)
+#include <OpenGL/gl.h>
+#include <OpenGL/glu.h>
+#include <GLUT/glut.h>
 
 
-//#else //linux
+#else //linux
 #include <GL/gl.h>
 #include <GL/glut.h>
-//#endif
+#endif
 
 //other includes
 #include <stdio.h>
@@ -23,6 +23,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <math.h>
 
 using namespace std;
 
@@ -39,7 +40,6 @@ float pixel_size;
 /*Window information*/
 int win_height;
 int win_width;
-
 
 void init();
 void idle();
@@ -69,6 +69,9 @@ public:
 	int numberOfPoints;
 	Point *points;
 };
+
+Polygon *polygons = NULL;
+int numberOfPolygons = 0;
 
 
 Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
@@ -103,8 +106,6 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 
 int main(int argc, char **argv)
 {  
-	Polygon *polygons = NULL;
-	int numberOfPolygons = 0;
 	
 	polygons = read_file(polygons, numberOfPolygons);
 
@@ -115,6 +116,20 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	cout << numberOfPolygons << endl;
+	cout << polygons[0].numberOfPoints << endl;
+	for (int i = 0; i < numberOfPolygons; i++)
+	{
+		for (int j = 0; j < polygons[i].numberOfPoints; j++)
+		{
+			//cout << "here" << endl;
+			//cout << "x: ";
+			cout << polygons[i].points[j].get_x() << endl;
+			//cout << "y: ";
+			cout << polygons[i].points[j].get_y() << endl;
+
+		}
+	}
 	
 	
 	
@@ -154,6 +169,7 @@ int main(int argc, char **argv)
 	init();
 	//start glut event loop
 	glutMainLoop();
+
 	return 0;
 }
 
@@ -182,12 +198,12 @@ void display()
 	glLoadIdentity();
 	
 	//draws every other pixel on the screen
-	for (int j = 0; j < grid_height; j+=2){
+	/*for (int j = 0; j < grid_height; j+=2){
 		for (int i = 0; i < grid_width; i+=2){
 			//this is the only "rendering call you should make in project 1"
 			draw_pix(i,j);
 		}
-	}
+	}*/
 	
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
