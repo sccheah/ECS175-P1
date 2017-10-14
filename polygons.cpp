@@ -54,6 +54,11 @@ void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
 void check();
 
+bool DDA_draw = false;
+bool plot_verticies_draw = true;
+
+void plot_verticies();
+
 
 
 class Point {
@@ -75,7 +80,8 @@ public:
 
 Polygon *polygons = NULL;
 int numberOfPolygons = 0;
-int user_input = 0;
+int user_input;
+int num_of_polygons_loop = 0;
 
 
 Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
@@ -107,22 +113,7 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 	return polygons;
 }
 
-int print_menu()
-{
-	cout << "1. DDA Algorithm" << endl;
-    
-    return 0;
-}
-
-void menu()
-{
-	// on exit, make sure to output verticies to new data file
-
-	int input;
-
-	input = print_menu();
-
-}
+//inline int round (const double a) {return int (a + 0.5);}
 
 int main(int argc, char **argv)
 {  
@@ -135,8 +126,6 @@ int main(int argc, char **argv)
 		cout << "No polygons read in file. Exitting program." << endl;
 		return 0;
 	}
-
-	menu();
 	
 	
 	//the number of pixels in the grid
@@ -165,6 +154,7 @@ int main(int argc, char **argv)
 	
 	/*defined glut callback functions*/
 	glutDisplayFunc(display); //rendering calls here
+
 	glutReshapeFunc(reshape); //update GL on window size change
 	glutMouseFunc(mouse);     //mouse button events
 	glutMotionFunc(motion);   //mouse movement events
@@ -176,6 +166,7 @@ int main(int argc, char **argv)
 	//start glut event loop
 	glutMainLoop();
 
+	
 	return 0;
 }
 
@@ -195,31 +186,6 @@ void idle()
 	glutPostRedisplay();
 }
 
-
-/*
-class Point {
-	double x;
-	double y;
-	
-public:
-	void set_x(double new_x) {x = new_x;}
-	void set_y(double new_y) {y = new_y;}
-	int get_x() {return x;}
-	int get_y() {return y;}
-};
-
-class Polygon {
-public:
-	int numberOfPoints;
-	Point *points;
-};
-
-Polygon *polygons = NULL;
-int numberOfPolygons = 0;
-int user_input = 0;
-
-*/
-
 //plot verticies
 void plot_verticies()
 {
@@ -236,6 +202,34 @@ void plot_verticies()
 	}
 }
 
+//DDA Line Algorithm
+void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
+{
+	int dx = xEnd - x0, dy = yEnd - y0, steps, k;
+	double xIncrement, yIncrement, x = x0, y = y0;
+
+	if ((double)(fabs(dx)) > (double)(fabs(dy)))
+	{
+		steps = (double)(fabs(dx));
+	}
+	else
+	{
+		steps = (double)(fabs(dy));
+	}
+
+	xIncrement = (double)(dx) / (double)(steps);
+	yIncrement = (double)(dy) / (double)(steps);
+
+	draw_pix(round(x), round(y));
+	for (k = 0; k < steps; k++)
+	{
+		x += xIncrement;
+		y += yIncrement;
+		draw_pix(round(x), round(y));
+	}
+}
+
+
 //this is where we render the screen
 void display()
 {
@@ -243,21 +237,32 @@ void display()
 	glClear(GL_DEPTH_BUFFER_BIT|GL_COLOR_BUFFER_BIT);
 	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
-	
     
-	switch(user_input){
-		case 0:
-			plot_verticies();
-			break;
+    if (plot_verticies_draw)
+		plot_verticies();
+	if (DDA_draw)
+	{
+		num_of_polygons_loop = 0;
+
+		while (num_of_polygons_loop < numberOfPolygons)
+		{
+			for (int k = 1; k < polygons[num_of_polygons_loop].numberOfPoints; k++)
+			{
+				draw_DDA_line((int)(polygons[num_of_polygons_loop].points[k - 1].get_x()), (int)(polygons[num_of_polygons_loop].points[k].get_x()), (int)(polygons[num_of_polygons_loop].points[k - 1].get_y()), (int)(polygons[num_of_polygons_loop].points[k].get_y()));
+			}
+		       
+			draw_DDA_line((int)(polygons[num_of_polygons_loop].points[0].get_x()), (int)(polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_x()), (int)(polygons[num_of_polygons_loop].points[0].get_y()), (int)(polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_y()));
+
+		       num_of_polygons_loop++;
+		}
 	}
-    
-    //draw_pix(20, 10);
-	
+
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
 	//checks for opengl errors
 	check();
 }
+
 
 
 //Draws a single "pixel" given the current grid size
@@ -304,6 +309,15 @@ void key(unsigned char ch, int x, int y)
 {
 	switch(ch)
 	{
+		case '0':
+			cout << "Exitting." << endl;
+			exit(0);
+			break;
+		case '1':
+			cout << "DDA Line Drawing." << endl;
+			DDA_draw = true;
+			break;
+
 		default:
 			//prints out which key the user hit
 			printf("User hit the \"%c\" key\n",ch);
