@@ -3,8 +3,6 @@
  * other projects by Garrett Aldrich
  */
 
-// DOES NOT READ FILE IN MAC FOR SOME REASON FIX LATER... WORKING IN LINUX ENV
-
 #ifdef WIN32
 #include <windows.h>
 #endif
@@ -56,6 +54,7 @@ void check();
 
 bool DDA_draw = false;
 bool plot_verticies_draw = true;
+bool Bres_draw = false;
 
 void plot_verticies();
 
@@ -150,7 +149,7 @@ int main(int argc, char **argv)
 	//create window of size (win_width x win_height
 	glutInitWindowSize(win_width,win_height);
 	//windown title is "glut demo"
-	glutCreateWindow("glut demo");
+	glutCreateWindow("Polygons");
 	
 	/*defined glut callback functions*/
 	glutDisplayFunc(display); //rendering calls here
@@ -229,6 +228,111 @@ void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
 	}
 }
 
+void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
+{
+
+	int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+	dx = xEnd - x0;
+	dy = yEnd - y0;
+	dx1 = fabs(dx);
+	dy1 = fabs(dy);
+	px = 2 * dy1 - dx1;
+	py = 2 * dx1 - dy1;
+
+	int temp_y = y0;
+
+	//draw vertical lines
+	if (x0 == xEnd)
+	{
+		if (temp_y < yEnd)
+		{
+			while (temp_y < yEnd)
+			{
+				temp_y++;
+				draw_pix(x0, temp_y);
+			}
+		}
+		if (temp_y > yEnd)
+		{
+			while (temp_y > yEnd)
+			{
+				temp_y--;
+				draw_pix(x0, temp_y);
+			}
+		}
+	}
+
+	if (dy1 <= dx1)
+	{
+		if (dx >= 0)
+		{
+			x = x0; 
+			y = y0;
+			xe = xEnd;
+		}
+		else
+		{
+			x = xEnd;
+			y = yEnd;
+			xe = x0;
+		}
+
+		draw_pix(x, y);
+
+		for (i = 0; x < xe; i++)
+		{
+			x++;
+			if (px < 0)
+				px = px + 2 * dy1;
+			else
+			{
+				if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0))
+					y++;
+				else
+					y--;
+
+				px = px + 2 * (dy1 - dx1);
+			}
+			draw_pix(x, y);
+		}
+	}
+	else
+	{
+		if (dy >= 0)
+		{
+			x = x0;
+			y = y0;
+			ye = yEnd;
+		}
+		else
+		{
+			x = xEnd;
+			y = yEnd;
+			ye = yEnd;
+		}
+
+		draw_pix(x, y);
+
+		for (i = 0; y < ye; i++)
+		{
+			y++;
+
+			if (py <= 0)
+				py = py + 2 * dx1;
+			else
+			{
+				if ((dx < 0) && (dy < 0) || (dx > 0) && dy > 0)
+					x++;
+				else
+					x--;
+
+				py = py + 2 * (dx1 - dy1);
+			}
+			draw_pix(x, y);
+		}
+	}
+
+}
 
 //this is where we render the screen
 void display()
@@ -240,6 +344,7 @@ void display()
     
     if (plot_verticies_draw)
 		plot_verticies();
+
 	if (DDA_draw)
 	{
 		num_of_polygons_loop = 0;
@@ -248,10 +353,27 @@ void display()
 		{
 			for (int k = 1; k < polygons[num_of_polygons_loop].numberOfPoints; k++)
 			{
-				draw_DDA_line((int)(polygons[num_of_polygons_loop].points[k - 1].get_x()), (int)(polygons[num_of_polygons_loop].points[k].get_x()), (int)(polygons[num_of_polygons_loop].points[k - 1].get_y()), (int)(polygons[num_of_polygons_loop].points[k].get_y()));
+				draw_DDA_line(polygons[num_of_polygons_loop].points[k-1].get_x(), polygons[num_of_polygons_loop].points[k-1].get_y(), polygons[num_of_polygons_loop].points[k].get_x(), polygons[num_of_polygons_loop].points[k].get_y());
 			}
 		       
-			draw_DDA_line((int)(polygons[num_of_polygons_loop].points[0].get_x()), (int)(polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_x()), (int)(polygons[num_of_polygons_loop].points[0].get_y()), (int)(polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_y()));
+			draw_DDA_line(polygons[num_of_polygons_loop].points[0].get_x(), polygons[num_of_polygons_loop].points[0].get_y(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_x(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_y());
+
+		       num_of_polygons_loop++;
+		}
+	}
+
+	if (Bres_draw)
+	{
+		num_of_polygons_loop = 0;
+
+		while (num_of_polygons_loop < numberOfPolygons)
+		{
+			for (int k = 1; k < polygons[num_of_polygons_loop].numberOfPoints; k++)
+			{
+				draw_Bres_line(polygons[num_of_polygons_loop].points[k-1].get_x(), polygons[num_of_polygons_loop].points[k-1].get_y(), polygons[num_of_polygons_loop].points[k].get_x(), polygons[num_of_polygons_loop].points[k].get_y());
+			}
+		       
+			draw_Bres_line(polygons[num_of_polygons_loop].points[0].get_x(), polygons[num_of_polygons_loop].points[0].get_y(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_x(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_y());
 
 		       num_of_polygons_loop++;
 		}
@@ -315,7 +437,13 @@ void key(unsigned char ch, int x, int y)
 			break;
 		case '1':
 			cout << "DDA Line Drawing." << endl;
+			Bres_draw = false;
 			DDA_draw = true;
+			break;
+		case '2':
+			cout << "Bresenham Line Drawing." << endl;
+			DDA_draw = false;
+			Bres_draw = true;
 			break;
 
 		default:
