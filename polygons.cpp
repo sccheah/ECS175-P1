@@ -228,6 +228,7 @@ void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
 	}
 }
 
+// Compare this with book and see if able to make edits to book for correct output
 void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 {
 
