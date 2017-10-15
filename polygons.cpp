@@ -25,6 +25,8 @@
 #include <fstream>
 #include <string>
 #include <math.h>
+#include <list>
+#include <vector>
 
 using namespace std;
 
@@ -55,12 +57,14 @@ void check();
 bool DDA_draw = false;
 bool plot_verticies_draw = true;
 bool Bres_draw = false;
+bool scanline_draw = false;
+
 
 void plot_verticies();
 
 
-
-class Point {
+class Point 
+{
 	double x;
 	double y;
 	
@@ -71,7 +75,8 @@ public:
 	int get_y() {return y;}
 };
 
-class Polygon {
+class Polygon 
+{
 public:
 	int numberOfPoints;
 	Point *points;
@@ -81,6 +86,21 @@ Polygon *polygons = NULL;
 int numberOfPolygons = 0;
 int user_input;
 int num_of_polygons_loop = 0;
+
+int **frame_buffer;
+int **edge_buffer;
+list<Point> scanline_points;
+list<Point> ignore_points;
+list<Point> consecutive_points;
+
+
+Point make_point(int x, int y)
+{
+	Point pt;
+	pt.set_x(x);
+	pt.set_y(y);
+	return pt;
+}
 
 
 Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
@@ -112,11 +132,107 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 	return polygons;
 }
 
-//inline int round (const double a) {return int (a + 0.5);}
+void find_ignore_points()
+{
+	for (int i = 0; i < numberOfPolygons; i++)
+	{
+		for (int j = 1; j < polygons[i].numberOfPoints; j++)
+		{
+			//check for horizontal lines
+			if (polygons[i].points[j - 1].get_y() == polygons[i].points[j].get_y())
+			{
+				for (int k = (int)(polygons[i].points[j - 1].get_x()); k <= (int)(polygons[i].points[j].get_x()); k++)
+				{
+					ignore_points.push_back(make_point(k, (int)(polygons[i].points[j - 1].get_y())));
+				}
+			}
+		}
+
+		// check if starting vertex to end vertex is a horizontal line
+		if (polygons[i].points[0].get_y() == polygons[i].points[polygons[i].numberOfPoints - 1].get_y())
+		{
+			for (int k = (int)(polygons[i].points[0].get_x()); k <= (int)(polygons[i].points[polygons[i].numberOfPoints - 1].get_x()); k++)
+			{
+				ignore_points.push_back(make_point(k, (int)(polygons[i].points[0].get_y())));
+			}
+		}
+
+		//check for local max/min points
+		for (int j = 2; j < polygons[i].numberOfPoints; j++)
+		{
+			// local min check
+			if ((polygons[i].points[j - 1].get_y() < polygons[i].points[j - 2].get_y()) && (polygons[i].points[j - 1].get_y() < polygons[i].points[j].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[j - 1].get_x()), (int)(polygons[i].points[j - 1].get_y())));
+			}
+
+			// local max check
+			if ((polygons[i].points[j - 1].get_y() > polygons[i].points[j - 2].get_y()) && (polygons[i].points[j - 1].get_y() > polygons[i].points[j].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[j - 1].get_x()), (int)(polygons[i].points[j - 1].get_y())));
+			}
+		}
+
+		// check if start and end verticies are local max/min points
+		if (polygons[i].numberOfPoints > 2)
+		{
+			// starting pt local min check
+			if ((polygons[i].points[0].get_y() < polygons[i].points[1].get_y()) && (polygons[i].points[0].get_y() < polygons[i].points[polygons[i].numberOfPoints - 1].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[0].get_x()), (int)(polygons[i].points[0].get_y())));
+			}
+
+			// starting pt local max check
+			if ((polygons[i].points[0].get_y() > polygons[i].points[1].get_y()) && (polygons[i].points[0].get_y() > polygons[i].points[polygons[i].numberOfPoints - 1].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[0].get_x()), (int)(polygons[i].points[0].get_y())));
+			}
+
+			// end pt local min check
+			if ((polygons[i].points[polygons[i].numberOfPoints - 1].get_y() < polygons[i].points[0].get_y()) && (polygons[i].points[polygons[i].numberOfPoints - 1].get_y() < polygons[i].points[polygons[i].numberOfPoints - 2].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[polygons[i].numberOfPoints - 1].get_x()), (int)(polygons[i].points[polygons[i].numberOfPoints - 1].get_y())));
+			}
+
+			// end pt local max check
+			if ((polygons[i].points[polygons[i].numberOfPoints - 1].get_y() > polygons[i].points[0].get_y()) && (polygons[i].points[polygons[i].numberOfPoints - 1].get_y() > polygons[i].points[polygons[i].numberOfPoints - 2].get_y()))
+			{
+				ignore_points.push_back(make_point((int)(polygons[i].points[polygons[i].numberOfPoints - 1].get_x()), (int)(polygons[i].points[polygons[i].numberOfPoints - 1].get_y())));
+			}
+		}
+	}
+}
+
+void clear_frame_buffer()
+{
+	for (int i = 0; i < grid_width; i++)
+	{
+		for (int j = 0; j < grid_height; j++)
+		{
+			frame_buffer[i][j] = 0;
+		}
+	}
+}
+
+void clear_edge_buffer()
+{
+	for (int i = 0; i < grid_width; i++)
+	{
+		for (int j = 0; j < grid_height; j++)
+		{
+			edge_buffer[i][j] = 0;
+		}
+	}
+}
+
 
 int main(int argc, char **argv)
 {  
-	
+		
+	//the number of pixels in the grid
+	grid_width = 100;
+	grid_height = 100;
+
 	polygons = read_file(polygons, numberOfPolygons);
 
 
@@ -125,11 +241,44 @@ int main(int argc, char **argv)
 		cout << "No polygons read in file. Exitting program." << endl;
 		return 0;
 	}
-	
-	
-	//the number of pixels in the grid
-	grid_width = 100;
-	grid_height = 100;
+
+
+	frame_buffer = new int* [grid_width];
+	edge_buffer = new int* [grid_width];
+	for (int i = 0; i < grid_width; i++)
+	{
+		frame_buffer[i] = new int [grid_height];
+		edge_buffer[i] = new int [grid_height];
+	}
+
+	find_ignore_points();
+
+
+
+/*
+	for (list<Point>::iterator it = ignore_points.begin(); it != ignore_points.end(); it++)
+	{
+		cout << "it->x: " << it->get_x() << endl;
+		cout << "it->y: " << it->get_y() << endl;
+	}
+
+	for (int i = 0; i < grid_width; i++)
+	{
+		for (int j = 0; j < grid_height; j++)
+		{
+			frame_buffer[i][j] = 1;
+			edge_buffer[i][j] = 1;
+		}
+	}
+	for (int i = 0; i < grid_width; i++)
+	{
+		for (int j = 0; j < grid_height; j++)
+		{
+			cout << "frame_buffer[" << i << "][" << j << "]: " << frame_buffer[i][j] << endl;
+			cout << "edge_buffer[" << i << "][" << j << "]: " << edge_buffer[i][j] << endl;
+		}
+	}
+*/
 	
 	//the size of pixels sets the inital window height and width
 	//don't make the pixels too large or the screen size will be larger than
@@ -185,6 +334,58 @@ void idle()
 	glutPostRedisplay();
 }
 
+/*
+void update_ignore_list()
+{
+	for (int j = 0; j < grid_height; j++)
+	{
+		for (int i = 0; i < grid_width - 1; i++)
+		{
+			if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 1))
+			{
+				ignore_points.push_back(make_point(i, j));
+			}
+
+			if (i > 0)
+			{
+				if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 0))
+				{
+					if ((edge_buffer[i][j] == 1) && (edge_buffer[i - 1][j] == 1))
+					{
+						ignore_points.push_back(make_point(i, j));
+					}
+				}
+			}
+		}
+	}
+}
+*/
+
+void identify_consecutive_points()
+{
+	for (int j = 0; j < grid_height; j++)
+	{
+		for (int i = 0; i < grid_width - 1; i++)
+		{
+			if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 1))
+			{
+				consecutive_points.push_back(make_point(i, j));
+			}
+
+			if (i > 0)
+			{
+				if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 0))
+				{
+					if ((edge_buffer[i][j] == 1) && (edge_buffer[i - 1][j] == 1))
+					{
+						consecutive_points.push_back(make_point(i, j));
+					}
+				}
+			}
+		}
+	}
+}
+
 //plot verticies
 void plot_verticies()
 {
@@ -220,11 +421,18 @@ void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
 	yIncrement = (double)(dy) / (double)(steps);
 
 	draw_pix(round(x), round(y));
+	frame_buffer[(int)round(x)][(int)round(y)] = 1;
+	edge_buffer[(int)round(x)][(int)round(y)] = 1;
+
+
 	for (k = 0; k < steps; k++)
 	{
 		x += xIncrement;
 		y += yIncrement;
 		draw_pix(round(x), round(y));
+		frame_buffer[(int)round(x)][(int)round(y)] = 1;
+		edge_buffer[(int)round(x)][(int)round(y)] = 1;
+		
 	}
 }
 
@@ -251,6 +459,9 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 			{
 				temp_y++;
 				draw_pix(x0, temp_y);
+				frame_buffer[x0][temp_y] = 1;
+				edge_buffer[x0][temp_y] = 1;
+				
 			}
 		}
 		if (temp_y > yEnd)
@@ -259,6 +470,8 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 			{
 				temp_y--;
 				draw_pix(x0, temp_y);
+				frame_buffer[x0][temp_y] = 1;
+				edge_buffer[x0][temp_y] = 1;
 			}
 		}
 	}
@@ -279,6 +492,9 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 		}
 
 		draw_pix(x, y);
+		frame_buffer[x][y] = 1;
+		edge_buffer[x][y] = 1;
+		
 
 		for (i = 0; x < xe; i++)
 		{
@@ -294,7 +510,10 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 
 				px = px + 2 * (dy1 - dx1);
 			}
+
 			draw_pix(x, y);
+			frame_buffer[x][y] = 1;
+			edge_buffer[x][y] = 1;
 		}
 	}
 	else
@@ -313,7 +532,9 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 		}
 
 		draw_pix(x, y);
-
+		frame_buffer[x][y] = 1;
+		edge_buffer[x][y] = 1;
+		
 		for (i = 0; y < ye; i++)
 		{
 			y++;
@@ -330,9 +551,122 @@ void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 				py = py + 2 * (dx1 - dy1);
 			}
 			draw_pix(x, y);
+			frame_buffer[x][y] = 1;
+			edge_buffer[x][y] = 1;
+			
 		}
 	}
 
+}
+
+
+
+bool check_ignore_point(int x, int y)
+{
+	for (list<Point>::iterator it = ignore_points.begin(); it != ignore_points.end(); it++)
+	{
+		if ((it->get_x() == x) && (it->get_y() == y))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool check_consecutive_points(int x, int y)
+{
+	for (list<Point>::iterator it = consecutive_points.begin(); it != consecutive_points.end(); it++)
+	{
+		if ((it->get_x() == x) && (it->get_y() == y))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void get_scanline_points()
+{
+	bool draw_scanline = false;
+	int ctr = 0;
+
+	for (int j = 0; j < grid_height; j++)
+	{
+		ctr = 0;
+		for (int i = 0; i < grid_width; i++)
+		{
+
+			if (check_consecutive_points(i, j))
+			{
+				ctr++;
+
+				if ((ctr % 2) == 0)
+				{
+					draw_scanline = true;
+				}
+
+				if ((ctr % 2) == 1)
+				{
+					draw_scanline = false;
+				}
+
+				for (int k = i; k < grid_width; k++)
+				{
+					
+					//if (check_consecutive_points(k, j) == false)
+					//{
+					//	i = k - 1;
+					//	continue;
+					//}
+
+					
+					if ((check_consecutive_points(k, j) == false) && check_ignore_point(k, j) == false)
+					{
+						i = k;
+						continue;
+					}
+
+				}
+			}
+
+			if (check_ignore_point(i, j))
+			{
+				if (check_consecutive_points(i, j) == false)
+				{
+					continue;
+				}
+			}
+
+			if (edge_buffer[i][j] == 1)
+			{
+				draw_scanline = !draw_scanline;
+			}
+
+			if (draw_scanline)
+			{
+				scanline_points.push_back(make_point(i, j));
+				frame_buffer[i][j] = 1;
+			}
+		}
+	}
+	
+	return;
+}
+
+void print_edge_buffer()
+{
+	for(int j = 0; j < grid_height; j++)
+	{
+		for(int i = 0; i < grid_width; i++)
+		{
+			if (edge_buffer[i][j] == 1)
+			{
+				cout << "(" << i << ", " << j << ")" << endl;
+			}
+		}
+	}
 }
 
 //this is where we render the screen
@@ -361,6 +695,8 @@ void display()
 
 		       num_of_polygons_loop++;
 		}
+
+		//print_edge_buffer();
 	}
 
 	if (Bres_draw)
@@ -377,6 +713,17 @@ void display()
 			draw_Bres_line(polygons[num_of_polygons_loop].points[0].get_x(), polygons[num_of_polygons_loop].points[0].get_y(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_x(), polygons[num_of_polygons_loop].points[polygons[num_of_polygons_loop].numberOfPoints - 1].get_y());
 
 		       num_of_polygons_loop++;
+		}
+
+		//print_edge_buffer();
+	}
+
+	if (scanline_draw)
+	{
+		//cout << "hello" << endl;
+		for (list<Point>::iterator it = scanline_points.begin(); it != scanline_points.end(); it++)
+		{
+			draw_pix(it->get_x(), it->get_y());
 		}
 	}
 
@@ -438,14 +785,32 @@ void key(unsigned char ch, int x, int y)
 			break;
 		case '1':
 			cout << "DDA Line Drawing." << endl;
+			scanline_draw = false;
 			Bres_draw = false;
+			clear_edge_buffer();
+			clear_frame_buffer();
+			scanline_points.clear();
 			DDA_draw = true;
 			break;
 		case '2':
 			cout << "Bresenham Line Drawing." << endl;
+			scanline_draw = false;
 			DDA_draw = false;
+			clear_edge_buffer();
+			clear_frame_buffer();
+			scanline_points.clear();
 			Bres_draw = true;
 			break;
+		case '3':
+		{
+			cout << "Scanline Polygon Filling Algorithm" << endl;
+			scanline_points.clear();
+			//update_ignore_list();
+			consecutive_points.clear();
+			identify_consecutive_points();
+			get_scanline_points();
+			scanline_draw = true;
+		}	break;
 
 		default:
 			//prints out which key the user hit
