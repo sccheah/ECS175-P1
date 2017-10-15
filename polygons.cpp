@@ -567,6 +567,7 @@ bool check_ignore_point(int x, int y)
 	{
 		if ((it->get_x() == x) && (it->get_y() == y))
 		{
+			//cout << "(" << it->get_x() << ", " << it->get_y() << ")" << endl;
 			return true;
 		}
 	}
@@ -580,6 +581,8 @@ bool check_consecutive_points(int x, int y)
 	{
 		if ((it->get_x() == x) && (it->get_y() == y))
 		{
+			//cout << "(" << it->get_x() << ", " << it->get_y() << ")" << endl;
+
 			return true;
 		}
 	}
@@ -591,6 +594,7 @@ void get_scanline_points()
 {
 	bool draw_scanline = false;
 	int ctr = 0;
+	int check_value = 0;
 
 	for (int j = 0; j < grid_height; j++)
 	{
@@ -600,6 +604,7 @@ void get_scanline_points()
 
 			if (check_consecutive_points(i, j))
 			{
+				
 				ctr++;
 
 				if ((ctr % 2) == 0)
@@ -614,14 +619,12 @@ void get_scanline_points()
 
 				for (int k = i; k < grid_width; k++)
 				{
-					
-					//if (check_consecutive_points(k, j) == false)
-					//{
-					//	i = k - 1;
-					//	continue;
-					//}
-
-					
+					if (edge_buffer[k][j] != 1)
+					{
+						i = k;
+						continue;
+					}
+										
 					if ((check_consecutive_points(k, j) == false) && check_ignore_point(k, j) == false)
 					{
 						i = k;
@@ -629,6 +632,7 @@ void get_scanline_points()
 					}
 
 				}
+
 			}
 
 			if (check_ignore_point(i, j))
@@ -637,10 +641,12 @@ void get_scanline_points()
 				{
 					continue;
 				}
+
 			}
 
 			if (edge_buffer[i][j] == 1)
 			{
+
 				draw_scanline = !draw_scanline;
 			}
 
@@ -649,6 +655,71 @@ void get_scanline_points()
 				scanline_points.push_back(make_point(i, j));
 				frame_buffer[i][j] = 1;
 			}
+
+		}
+	}
+
+	draw_scanline = false;
+	for (int j = 0; j < grid_height; j++)
+	{
+		ctr = 0;
+		for (int i = grid_height - 1; i >= 0; i--)
+		{
+
+			if (check_consecutive_points(i, j))
+			{
+				
+				ctr++;
+
+				if ((ctr % 2) == 0)
+				{
+					draw_scanline = true;
+				}
+
+				if ((ctr % 2) == 1)
+				{
+					draw_scanline = false;
+				}
+
+				for (int k = i; k >= 0; k--)
+				{
+					if (edge_buffer[k][j] != 1)
+					{
+						i = k;
+						continue;
+					}
+										
+					if ((check_consecutive_points(k, j) == false) && check_ignore_point(k, j) == false)
+					{
+						i = k;
+						continue;
+					}
+
+				}
+
+			}
+
+			if (check_ignore_point(i, j))
+			{
+				if (check_consecutive_points(i, j) == false)
+				{
+					continue;
+				}
+
+			}
+
+			if (edge_buffer[i][j] == 1)
+			{
+
+				draw_scanline = !draw_scanline;
+			}
+
+			if (draw_scanline)
+			{
+				scanline_points.push_back(make_point(i, j));
+				frame_buffer[i][j] = 1;
+			}
+
 		}
 	}
 	
