@@ -58,6 +58,11 @@ bool DDA_draw = false;
 bool plot_verticies_draw = true;
 bool Bres_draw = false;
 bool scanline_draw = false;
+bool clip_window = false;
+bool rotate_draw = false;
+
+bool is_button_down = false;
+bool is_button_up = false;
 
 
 void plot_verticies();
@@ -82,6 +87,7 @@ public:
 	Point *points;
 };
 
+
 Polygon *polygons = NULL;
 int numberOfPolygons = 0;
 int user_input;
@@ -92,6 +98,8 @@ int **edge_buffer;
 list<Point> scanline_points;
 list<Point> ignore_points;
 list<Point> consecutive_points;
+Point button_down;
+Point button_up;
 
 
 Point make_point(int x, int y)
@@ -124,6 +132,8 @@ Polygon* read_file(Polygon *polygons, int &numberOfPolygons)
 			file >> y;
 			polygons[i].points[j].set_x(x);
 			polygons[i].points[j].set_y(y);
+			frame_buffer[(int)x][(int)y] = 1;
+			edge_buffer[(int)x][(int)y] = 1;
 		}
 		
 	}
@@ -233,15 +243,10 @@ int main(int argc, char **argv)
 	grid_width = 100;
 	grid_height = 100;
 
-	polygons = read_file(polygons, numberOfPolygons);
-
-
-	if (polygons == NULL)
-	{
-		cout << "No polygons read in file. Exitting program." << endl;
-		return 0;
-	}
-
+	button_down.set_x(0);
+	button_down.set_y(0);
+	button_up.set_x(grid_width - 1);
+	button_up.set_y(grid_height - 1);
 
 	frame_buffer = new int* [grid_width];
 	edge_buffer = new int* [grid_width];
@@ -251,34 +256,18 @@ int main(int argc, char **argv)
 		edge_buffer[i] = new int [grid_height];
 	}
 
+
+	polygons = read_file(polygons, numberOfPolygons);
+
+
+	if (polygons == NULL)
+	{
+		cout << "No polygons read in file. Exitting program." << endl;
+		return 0;
+	}
+
 	find_ignore_points();
 
-
-
-/*
-	for (list<Point>::iterator it = ignore_points.begin(); it != ignore_points.end(); it++)
-	{
-		cout << "it->x: " << it->get_x() << endl;
-		cout << "it->y: " << it->get_y() << endl;
-	}
-
-	for (int i = 0; i < grid_width; i++)
-	{
-		for (int j = 0; j < grid_height; j++)
-		{
-			frame_buffer[i][j] = 1;
-			edge_buffer[i][j] = 1;
-		}
-	}
-	for (int i = 0; i < grid_width; i++)
-	{
-		for (int j = 0; j < grid_height; j++)
-		{
-			cout << "frame_buffer[" << i << "][" << j << "]: " << frame_buffer[i][j] << endl;
-			cout << "edge_buffer[" << i << "][" << j << "]: " << edge_buffer[i][j] << endl;
-		}
-	}
-*/
 	
 	//the size of pixels sets the inital window height and width
 	//don't make the pixels too large or the screen size will be larger than
@@ -333,33 +322,6 @@ void idle()
 	//redraw the scene over and over again
 	glutPostRedisplay();
 }
-
-/*
-void update_ignore_list()
-{
-	for (int j = 0; j < grid_height; j++)
-	{
-		for (int i = 0; i < grid_width - 1; i++)
-		{
-			if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 1))
-			{
-				ignore_points.push_back(make_point(i, j));
-			}
-
-			if (i > 0)
-			{
-				if ((edge_buffer[i][j] == 1) && (edge_buffer[i + 1][j] == 0))
-				{
-					if ((edge_buffer[i][j] == 1) && (edge_buffer[i - 1][j] == 1))
-					{
-						ignore_points.push_back(make_point(i, j));
-					}
-				}
-			}
-		}
-	}
-}
-*/
 
 void identify_consecutive_points()
 {
@@ -436,6 +398,8 @@ void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
 	}
 }
 
+
+//come back to this/////////////////////////////////////////////////////////////////////////////////
 // Compare this with book and see if able to make edits to book for correct output
 void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 {
@@ -582,7 +546,6 @@ bool check_consecutive_points(int x, int y)
 		if ((it->get_x() == x) && (it->get_y() == y))
 		{
 			//cout << "(" << it->get_x() << ", " << it->get_y() << ")" << endl;
-
 			return true;
 		}
 	}
@@ -590,6 +553,7 @@ bool check_consecutive_points(int x, int y)
 	return false;
 }
 
+//COME BACK TO THIS //////////////////////////////////////////////////////////////////
 void get_scanline_points()
 {
 	bool draw_scanline = false;
@@ -798,13 +762,177 @@ void display()
 		}
 	}
 
+	if (clip_window)
+	{
+		for (int i = 0; i < grid_width; i++)
+		{
+			for (int j = 0; j < grid_height; j++)
+			{
+					glBegin(GL_POINTS);
+					glColor3f(1.0,1.0,1.0);
+					glVertex3f(i+.5,j+.5,0);
+					glEnd();
+			}
+		}
+
+		if (button_down.get_x() <= button_up.get_x())
+		{
+			if (button_down.get_y() <= button_up.get_y())
+			{
+				for (int j = button_down.get_y(); j <= button_up.get_y(); j++)
+				{
+					for (int i = button_down.get_x(); i <= button_up.get_x(); i++)
+					{
+						if (frame_buffer[i][j] == 1)
+						{
+							draw_pix(i, j);
+						}
+					}
+				}
+			}
+
+			if (button_down.get_y() > button_up.get_y())
+			{
+				for (int j = button_up.get_y(); j <= button_down.get_y(); j++)
+				{
+					for (int i = button_down.get_x(); i <= button_up.get_x(); i++)
+					{
+						if (frame_buffer[i][j] == 1)
+						{
+							draw_pix(i, j);
+						}
+					}
+				}
+			}
+		}
+
+		if (button_down.get_x() > button_up.get_x())
+		{
+			if (button_down.get_y() <= button_up.get_y())
+			{
+				for (int j = button_down.get_y(); j <= button_up.get_y(); j++)
+				{
+					for (int i = button_up.get_x(); i <= button_down.get_x(); i++)
+					{
+						if (frame_buffer[i][j] == 1)
+						{
+							draw_pix(i, j);
+						}
+					}
+				}
+			}
+
+			if (button_down.get_y() > button_up.get_y())
+			{
+				for (int j = button_up.get_y(); j <= button_down.get_y(); j++)
+				{
+					for (int i = button_up.get_x(); i <= button_down.get_x(); i++)
+					{
+						if (frame_buffer[i][j] == 1)
+						{
+							draw_pix(i, j);
+						}
+					}
+				}
+			}
+		}
+	}
+
+
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
 	//checks for opengl errors
 	check();
 }
 
+void translatePolygon(int selected_polygon, int tx, int ty)
+{
+	for (int k = 0; k < polygons[selected_polygon].numberOfPoints; k++)
+	{
+		polygons[selected_polygon].points[k].set_x(polygons[selected_polygon].points[k].get_x() + tx);
+		polygons[selected_polygon].points[k].set_y(polygons[selected_polygon].points[k].get_y() + ty);
+	}
+	
+	scanline_points.clear();
+	get_scanline_points();
+}
 
+void rotatePolygon(int selected_polygon, double theta)
+{
+	double pivot_x = 0.0;
+	double pivot_y = 0.0;
+
+	double x;
+	double y;
+
+	for (int k = 0; k < polygons[selected_polygon].numberOfPoints; k++)
+	{
+		pivot_x += polygons[selected_polygon].points[k].get_x();
+		pivot_y += polygons[selected_polygon].points[k].get_y();
+	}
+
+	pivot_x = pivot_x / polygons[selected_polygon].numberOfPoints;
+	pivot_y = pivot_y / polygons[selected_polygon].numberOfPoints;
+
+
+	for (int k = 0; k < polygons[selected_polygon].numberOfPoints; k++)
+	{
+		x = pivot_x + ((((double)(polygons[selected_polygon].points[k].get_x()) - pivot_x) * cos(theta)) - (((double)(polygons[selected_polygon].points[k].get_y()) - pivot_y) * sin(theta)));
+		y = pivot_y + ((((double)(polygons[selected_polygon].points[k].get_x()) - pivot_x) * sin(theta)) + (((double)(polygons[selected_polygon].points[k].get_y()) - pivot_y) * cos(theta)));
+	
+		polygons[selected_polygon].points[k].set_x(x);
+		polygons[selected_polygon].points[k].set_y(y);
+	}
+}
+
+void scalePolygon(int selected_polygon, double scale_factor)
+{
+	int k;
+	double sx = scale_factor, sy = scale_factor;
+	int fixed_x, fixed_y;
+	double new_x, new_y;
+
+	for (int k = 0; k < polygons[selected_polygon].numberOfPoints; k++)
+	{
+		fixed_x += polygons[selected_polygon].points[k].get_x();
+		fixed_y += polygons[selected_polygon].points[k].get_y();
+	}
+
+	fixed_x = fixed_x / polygons[selected_polygon].numberOfPoints;
+	fixed_y = fixed_y / polygons[selected_polygon].numberOfPoints;
+
+	for (k = 0; k < polygons[selected_polygon].numberOfPoints; k++)
+	{
+		new_x = polygons[selected_polygon].points[k].get_x() * sx + polygons[selected_polygon].points[0].get_x() * (1 - sx);
+		new_y = polygons[selected_polygon].points[k].get_y() * sy + polygons[selected_polygon].points[0].get_y() * (1 - sy);
+
+		polygons[selected_polygon].points[k].set_x(new_x);
+		polygons[selected_polygon].points[k].set_y(new_y);
+	}
+
+}
+
+void output_to_file()
+{
+	fstream file;
+	file.open("output.txt", fstream::out);
+	file << numberOfPolygons;
+	file << endl;
+
+	for (int i = 0; i < numberOfPolygons; i++)
+	{
+		file << endl;
+		file << polygons[i].numberOfPoints;
+
+		for (int j = 0; j < polygons[i].numberOfPoints; j++)
+		{
+			file << endl;
+			file << polygons[i].points[j].get_x() << " " << polygons[i].points[j].get_y();
+		}
+		file << endl;
+	}
+	file.close();
+}
 
 //Draws a single "pixel" given the current grid size
 //don't change anything in this for project 1
@@ -852,9 +980,12 @@ void key(unsigned char ch, int x, int y)
 	{
 		case '0':
 			cout << "Exitting." << endl;
+			cout << "Outputting to \"output.txt\"..." << endl;
+			output_to_file();
 			exit(0);
 			break;
 		case '1':
+		{
 			cout << "DDA Line Drawing." << endl;
 			scanline_draw = false;
 			Bres_draw = false;
@@ -863,7 +994,9 @@ void key(unsigned char ch, int x, int y)
 			scanline_points.clear();
 			DDA_draw = true;
 			break;
+		}
 		case '2':
+		{
 			cout << "Bresenham Line Drawing." << endl;
 			scanline_draw = false;
 			DDA_draw = false;
@@ -872,6 +1005,7 @@ void key(unsigned char ch, int x, int y)
 			scanline_points.clear();
 			Bres_draw = true;
 			break;
+		}
 		case '3':
 		{
 			cout << "Scanline Polygon Filling Algorithm" << endl;
@@ -881,7 +1015,104 @@ void key(unsigned char ch, int x, int y)
 			identify_consecutive_points();
 			get_scanline_points();
 			scanline_draw = true;
-		}	break;
+		
+			break;
+		}
+		case '4':
+		{
+			cout << "Clipping Window" << endl;
+			clip_window = true;
+			
+			break;
+		}
+		case '5':
+		{
+			int selected_polygon, tx, ty;
+			cout << "Translating Polygon" << endl;
+			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
+			cin >> selected_polygon;
+			cout << "Enter x translation value: ";
+			cin >> tx;
+			cout << "Enter y translation value: ";
+			cin >> ty;
+
+			clear_frame_buffer();
+			clear_edge_buffer();
+
+			translatePolygon(selected_polygon, tx, ty);
+
+			break;
+		}
+		case '6':
+		{
+			double pi = 3.1415926535897;
+			double angle = 0;
+			int selected_polygon;
+			cout << "Rotating polygon" << endl;
+
+			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
+			cin >> selected_polygon;
+			cout << "Enter angle: ";
+			cin >> angle;
+			clear_frame_buffer();
+			clear_edge_buffer();
+			rotatePolygon(selected_polygon, (angle / 180) * pi);
+			rotate_draw = true;
+			break;
+		}
+		case '7':
+		{
+			double scale_factor = 1;
+			int selected_polygon;
+
+			cout << "Scaling Polygon" << endl;
+			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
+			cin >> selected_polygon;
+			cout << "Enter scale factor: ";
+			cin >> scale_factor;
+			clear_frame_buffer();
+			clear_edge_buffer();
+			scalePolygon(selected_polygon, scale_factor);
+			break;
+		}
+		case '8':
+		{
+			int x1, y1, x2, y2;
+			cout << "Change viewport" << endl;
+			cout << "Enter first point x coordinate: ";
+			cin >> x1;
+			cout << "Enter first point y coordinate: ";
+			cin >> y1;
+			cout << "Enter second point x coordinate: ";
+			cin >> x2;
+			cout << "Enter second point y coordinate: ";
+			cin >> y2;
+
+			button_down.set_x(x1);
+			button_down.set_y(y1);
+			button_up.set_x(x2);
+			button_up.set_y(y2);
+
+			break;
+		}
+
+		case '9':
+		{
+			cout << "Resetting" << endl;
+			DDA_draw = false;
+			Bres_draw = false;
+			scanline_draw = false;
+			clip_window = false;
+			rotate_draw = false;
+
+
+			button_down.set_x(0);
+			button_down.set_y(0);
+			button_up.set_x(grid_width - 1);
+			button_up.set_y(grid_height - 1);
+
+			break;
+		}
 
 		default:
 			//prints out which key the user hit
@@ -910,9 +1141,19 @@ void mouse(int button, int state, int x, int y)
 			break;
 	}
 	if(state !=GLUT_DOWN)  //button released
+	{
 		printf("BUTTON UP\n");
+		is_button_up = true;
+		button_up.set_x((int)(x/pixel_size));
+		button_up.set_y((int)((win_height-y)/pixel_size));
+	}
 	else
+	{
 		printf("BUTTON DOWN\n");  //button clicked
+		is_button_down = true;
+		button_down.set_x((int)(x/pixel_size));
+		button_down.set_y((int)((win_height-y)/pixel_size));
+	}
 	
 	//redraw the scene after mouse click
 	glutPostRedisplay();
@@ -937,19 +1178,3 @@ void check()
 	}
 }
 
-
-	// in main after read_file function to check polygon points
-	/*cout << numberOfPolygons << endl;
-	cout << polygons[0].numberOfPoints << endl;
-	for (int i = 0; i < numberOfPolygons; i++)
-	{
-		for (int j = 0; j < polygons[i].numberOfPoints; j++)
-		{
-			//cout << "here" << endl;
-			//cout << "x: ";
-			cout << polygons[i].points[j].get_x() << endl;
-			//cout << "y: ";
-			cout << polygons[i].points[j].get_y() << endl;
-
-		}
-	}*/
