@@ -30,12 +30,6 @@
 
 using namespace std;
 
-/////////////////////////////////
-// need to fix bugs, interactive menu... display menu. fix Bresenham and scanline
-// review all algs and parts in book
-////////////////////////////////
-
-
 /****set in main()****/
 //the number of pixels in the grid
 int grid_width;
@@ -59,6 +53,7 @@ void key(unsigned char ch, int x, int y);
 void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
 void check();
+void display_menu();
 
 bool DDA_draw = false;
 bool plot_verticies_draw = true;
@@ -244,7 +239,8 @@ void clear_edge_buffer()
 
 int main(int argc, char **argv)
 {  
-		
+	display_menu();
+
 	//the number of pixels in the grid
 	grid_width = 100;
 	grid_height = 100;
@@ -758,7 +754,6 @@ void display()
 
 	if (scanline_draw)
 	{
-		//cout << "hello" << endl;
 		for (list<Point>::iterator it = scanline_points.begin(); it != scanline_points.end(); it++)
 		{
 			draw_pix(it->get_x(), it->get_y());
@@ -976,6 +971,23 @@ void reshape(int width, int height)
 	check();
 }
 
+void display_menu()
+{
+	cout << "Menu" << endl;
+	cout << "1. DDA Line Drawing" << endl;
+	cout << "2. Bresenham Line Drawing" << endl;
+	cout << "3. Scanline Polygon Filling" << endl;
+	cout << "4. Translate Polygon" << endl;
+	cout << "5. Rotate Polygon" << endl;
+	cout << "6. Scale Polygon" << endl;
+	cout << "7. Clip Window" << endl;
+	cout << "8. Change Viewport by coordinates" << endl;
+	cout << "9. Resetting" << endl;
+	cout << "0. Exitting and outputting to output.txt" << endl;
+	cout << endl;
+
+}
+
 //gets called when a key is pressed on the keyboard
 void key(unsigned char ch, int x, int y)
 {
@@ -983,6 +995,7 @@ void key(unsigned char ch, int x, int y)
 	{
 		case '0':
 			cout << "Exitting." << endl;
+			cout << endl;
 			cout << "Outputting to \"output.txt\"..." << endl;
 			output_to_file();
 			exit(0);
@@ -990,50 +1003,55 @@ void key(unsigned char ch, int x, int y)
 		case '1':
 		{
 			cout << "DDA Line Drawing." << endl;
+			cout << endl;
 			scanline_draw = false;
 			Bres_draw = false;
 			clear_edge_buffer();
 			clear_frame_buffer();
 			scanline_points.clear();
 			DDA_draw = true;
+			display_menu();
 			break;
 		}
 		case '2':
 		{
 			cout << "Bresenham Line Drawing." << endl;
+			cout << endl;
 			scanline_draw = false;
 			DDA_draw = false;
 			clear_edge_buffer();
 			clear_frame_buffer();
 			scanline_points.clear();
 			Bres_draw = true;
+			display_menu();
 			break;
 		}
 		case '3':
 		{
 			cout << "Scanline Polygon Filling Algorithm" << endl;
+			cout << endl;
 			scanline_points.clear();
-			//update_ignore_list();
 			consecutive_points.clear();
 			identify_consecutive_points();
 			get_scanline_points();
 			scanline_draw = true;
-		
+			display_menu();
 			break;
 		}
 		case '4':
 		{
-			cout << "Clipping Window" << endl;
-			clip_window = true;
-			
-			break;
-		}
-		case '5':
-		{
 			int selected_polygon, tx, ty;
 			cout << "Translating Polygon" << endl;
+			cout << endl;
 			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
 			cin >> selected_polygon;
+
+			if ((selected_polygon < 0) || (selected_polygon > (numberOfPolygons - 1)))
+			{
+				cout << "Invalid Polygon Selection" << endl;
+				break;
+			}
+
 			cout << "Enter x translation value: ";
 			cin >> tx;
 			cout << "Enter y translation value: ";
@@ -1043,45 +1061,70 @@ void key(unsigned char ch, int x, int y)
 			clear_edge_buffer();
 
 			translatePolygon(selected_polygon, tx, ty);
-
+			display_menu();
 			break;
 		}
-		case '6':
+		case '5':
 		{
 			double pi = 3.1415926535897;
 			double angle = 0;
 			int selected_polygon;
 			cout << "Rotating polygon" << endl;
-
+			cout << endl;
 			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
 			cin >> selected_polygon;
+
+			if ((selected_polygon < 0) || (selected_polygon > (numberOfPolygons - 1)))
+			{
+				cout << "Invalid Polygon Selection" << endl;
+				break;
+			}
+
 			cout << "Enter angle: ";
 			cin >> angle;
 			clear_frame_buffer();
 			clear_edge_buffer();
 			rotatePolygon(selected_polygon, (angle / 180) * pi);
 			rotate_draw = true;
+			display_menu();
 			break;
 		}
-		case '7':
+		case '6':
 		{
 			double scale_factor = 1;
 			int selected_polygon;
-
 			cout << "Scaling Polygon" << endl;
+			cout << endl;
 			cout << "Enter selected polygon [0-" << numberOfPolygons - 1 << "]: " << endl;
 			cin >> selected_polygon;
+
+			if ((selected_polygon < 0) || (selected_polygon > (numberOfPolygons - 1)))
+			{
+				cout << "Invalid Polygon Selection" << endl;
+				break;
+			}
+
 			cout << "Enter scale factor: ";
 			cin >> scale_factor;
 			clear_frame_buffer();
 			clear_edge_buffer();
 			scalePolygon(selected_polygon, scale_factor);
+			display_menu();
+			break;
+		}
+		case '7':
+		{
+			cout << "Clipping Window" << endl;
+			cout << endl;
+			clip_window = true;
+			display_menu();			
 			break;
 		}
 		case '8':
 		{
 			int x1, y1, x2, y2;
 			cout << "Change viewport" << endl;
+			cout << endl;
 			cout << "Enter first point x coordinate: ";
 			cin >> x1;
 			cout << "Enter first point y coordinate: ";
@@ -1095,13 +1138,14 @@ void key(unsigned char ch, int x, int y)
 			button_down.set_y(y1);
 			button_up.set_x(x2);
 			button_up.set_y(y2);
-
+			display_menu();
 			break;
 		}
 
 		case '9':
 		{
 			cout << "Resetting" << endl;
+			cout << endl;
 			DDA_draw = false;
 			Bres_draw = false;
 			scanline_draw = false;
@@ -1113,13 +1157,14 @@ void key(unsigned char ch, int x, int y)
 			button_down.set_y(0);
 			button_up.set_x(grid_width - 1);
 			button_up.set_y(grid_height - 1);
-
+			display_menu();
 			break;
 		}
 
 		default:
 			//prints out which key the user hit
 			printf("User hit the \"%c\" key\n",ch);
+			display_menu();
 			break;
 	}
 	//redraw the scene after keyboard input
