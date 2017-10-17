@@ -30,6 +30,12 @@
 
 using namespace std;
 
+/////////////////////////////////
+// need to fix bugs, interactive menu... display menu. fix Bresenham and scanline
+// review all algs and parts in book
+////////////////////////////////
+
+
 /****set in main()****/
 //the number of pixels in the grid
 int grid_width;
@@ -398,9 +404,6 @@ void draw_DDA_line(int x0, int y0, int xEnd, int yEnd)
 	}
 }
 
-
-//come back to this/////////////////////////////////////////////////////////////////////////////////
-// Compare this with book and see if able to make edits to book for correct output
 void draw_Bres_line(int x0, int y0, int xEnd, int yEnd)
 {
 
@@ -553,13 +556,13 @@ bool check_consecutive_points(int x, int y)
 	return false;
 }
 
-//COME BACK TO THIS //////////////////////////////////////////////////////////////////
 void get_scanline_points()
 {
 	bool draw_scanline = false;
 	int ctr = 0;
 	int check_value = 0;
 
+	// left to right scanline
 	for (int j = 0; j < grid_height; j++)
 	{
 		ctr = 0;
@@ -627,7 +630,7 @@ void get_scanline_points()
 	for (int j = 0; j < grid_height; j++)
 	{
 		ctr = 0;
-		for (int i = grid_height - 1; i >= 0; i--)
+		for (int i = grid_width - 1; i >= 0; i--)
 		{
 
 			if (check_consecutive_points(i, j))
